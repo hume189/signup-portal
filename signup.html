@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study sign-up</title>
+<style>
+:root {
+  --bg: #f5f5fa; --surface: #ffffff; --ink: #17182b; --muted: #5d5f78; --line: #dadbe8;
+  --accent: #3a3fb0; --accent-ink: #ffffff; --accent-soft: #ebecfa;
+  --ok: #1c7a4d; --warn: #9a560c; --danger: #b3261e;
+  /* One color per study: A, B, C, D (then repeating). */
+  --study-0: #0f766e; --study-0-soft: #e1f3f0;
+  --study-1: #b4530a; --study-1-soft: #fdf0e3;
+  --study-2: #a3246f; --study-2-soft: #fbeaf3;
+  --study-3: #3a3fb0; --study-3-soft: #ecedfb;
+  --study-none: #5d5f78; --study-none-soft: #eeeef4;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12131c; --surface: #1b1c29; --ink: #ecedf7; --muted: #a1a3bd; --line: #2f3145;
+    --accent: #a3a8ff; --accent-ink: #12131c; --accent-soft: #262846;
+    --ok: #6fd3a0; --warn: #f0b35a; --danger: #ff8d85;
+    --study-0: #5fd4c4; --study-0-soft: #13312e;
+    --study-1: #f5a35c; --study-1-soft: #3a2614;
+    --study-2: #f39ad0; --study-2-soft: #3b1f31;
+    --study-3: #a3a8ff; --study-3-soft: #23254a;
+    --study-none: #a1a3bd; --study-none-soft: #24253a;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px; line-height: 1.55;
+}
+.study-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.study-grid.split { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+/* Each study column sets --s / --s-soft to its own color from the tokens above. */
+.study-col {
+  --s: var(--study-none); --s-soft: var(--study-none-soft);
+  display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  background: var(--s-soft); border-radius: 10px; padding: 12px;
+}
+.study-name { margin: 0 0 2px; font-size: 15px; color: var(--s); display: flex; align-items: center; gap: 8px; }
+.study-name::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--s); flex: none; }
+.study-details {
+  margin: 0 0 4px; padding-left: 20px; display: flex; flex-direction: column; gap: 2px;
+  font-size: 14px; font-weight: 700; color: var(--ink);
+}
+.study-col .session { background: var(--surface); }
+.study-col .session.chosen { border-color: var(--s); background: var(--surface); box-shadow: inset 0 0 0 1px var(--s); }
+.study-col .session input { accent-color: var(--s); }
+.study-col .session:focus-within { outline-color: var(--s); }
+.study-col .session.full { background: transparent; }
+.study-col .session.decline { border-style: dashed; padding-block: 10px; }
+.study-col .session.decline .session-time { font-weight: 500; }
+.study-col.missing { box-shadow: inset 0 0 0 2px var(--danger); }
+.note {
+  background: var(--accent-soft); border-radius: 8px; padding: 10px 13px 10px 32px; margin: 0;
+  font-size: 15px; font-weight: 600; display: flex; flex-direction: column; gap: 4px;
+}
+.badge {
+  align-self: flex-start; font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+  color: var(--s); background: var(--s-soft); border-radius: 999px; padding: 1px 9px; margin-bottom: 4px;
+}
+.page { max-width: 760px; margin: 0 auto; padding: 32px 16px 48px; display: flex; flex-direction: column; gap: 22px; }
+h1 { font-size: 27px; line-height: 1.2; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 18px; margin: 0; }
+p { margin: 0; }
+.lede { color: var(--muted); margin-top: 8px; }
+.panel {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 22px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+form, fieldset { display: flex; flex-direction: column; gap: 18px; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.name-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 420px) { .name-row { grid-template-columns: minmax(0, 1fr); gap: 18px; } }
+.field > label, .legend { font-weight: 600; font-size: 14px; }
+input[type="text"], input[type="email"], input[type="tel"] {
+  font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; width: 100%;
+}
+input:focus-visible, button:focus-visible, .session:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sessions { display: flex; flex-direction: column; gap: 8px; }
+.session {
+  display: flex; align-items: center; gap: 12px; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 8px; padding: 12px 13px;
+}
+.session.chosen { border-color: var(--accent); background: var(--accent-soft); }
+.session.full { cursor: not-allowed; color: var(--muted); }
+.session input { accent-color: var(--accent); margin: 0; flex: none; }
+.session-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.session-time { font-weight: 600; }
+.session-room { color: var(--muted); font-size: 14px; }
+.seats { font-size: 14px; font-weight: 600; white-space: nowrap; color: var(--ok); font-variant-numeric: tabular-nums; }
+.seats.low { color: var(--warn); }
+.seats.none { color: var(--muted); }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; }
+.check input { accent-color: var(--accent); margin-top: 4px; flex: none; }
+.muted { color: var(--muted); font-size: 15px; }
+.error { color: var(--danger); font-size: 15px; font-weight: 600; }
+button {
+  font: inherit; font-weight: 600; cursor: pointer; border-radius: 7px; padding: 11px 18px;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+}
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+.done-title { display: flex; align-items: center; gap: 10px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); flex: none; }
+dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 18px; }
+dt { color: var(--muted); }
+dd { margin: 0; overflow-wrap: anywhere; }
+.done-sessions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.done-sessions li { border: 1px solid var(--line); border-radius: 8px; padding: 10px 13px; display: flex; flex-direction: column; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1 id="title">Study sign-up</h1>
+    <p class="lede" id="intro"></p>
+  </header>
+
+  <section class="panel" id="form-panel">
+    <h2>Sign up for sessions</h2>
+    <form id="signup-form" novalidate>
+      <fieldset id="fields">
+        <div class="name-row">
+          <div class="field">
+            <label for="f-first">First name</label>
+            <input type="text" id="f-first" autocomplete="given-name" maxlength="60">
+          </div>
+          <div class="field">
+            <label for="f-last">Last name</label>
+            <input type="text" id="f-last" autocomplete="family-name" maxlength="60">
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-email">University email</label>
+          <input type="email" id="f-email" autocomplete="email" maxlength="200">
+        </div>
+        <div class="field">
+          <label for="f-phone">Phone number</label>
+          <input type="tel" id="f-phone" autocomplete="tel" inputmode="tel" maxlength="30">
+        </div>
+        <div class="field">
+          <span class="legend" id="session-legend">Sessions</span>
+          <ul class="note" id="signup-note" hidden></ul>
+          <span class="muted" id="session-hint">Tick every session you want to attend.</span>
+          <div class="sessions" id="session-list" role="group" aria-labelledby="session-legend">
+            <p class="muted">Loading sessions…</p>
+          </div>
+        </div>
+        <label class="check" for="f-consent">
+          <input type="checkbox" id="f-consent">
+          <span>I am 18 or older and agree to be contacted by email or phone about these sessions.</span>
+        </label>
+        <p class="error" id="form-error" hidden></p>
+        <button type="submit" id="submit-btn">Sign up</button>
+      </fieldset>
+    </form>
+  </section>
+
+  <section class="panel" id="done-panel" hidden>
+    <div class="done-title"><span class="dot"></span><h2>You're signed up</h2></div>
+    <ul class="done-sessions" id="done-sessions"></ul>
+    <dl>
+      <dt>Name</dt><dd id="done-name"></dd>
+      <dt>Email</dt><dd id="done-email"></dd>
+      <dt>Phone</dt><dd id="done-phone"></dd>
+    </dl>
+    <p class="muted" id="done-invite" hidden></p>
+    <p class="muted" id="done-contact"></p>
+  </section>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* Where the sign-up sheet lives. Served by Google, the page talks to it directly.
+     Hosted anywhere else (e.g. GitHub Pages), it uses this web app link instead,
+     which keeps working on phones signed in to several Google accounts. */
+  var API_URL = "https://script.google.com/macros/s/AKfycbwYTha0eRqI7Br3spSeCLwkHpMqDq6yzT_DXpAWFwTn-9sTDNdJ_CNBW-tvOX1TEaLzDg/exec";
+
+  function server(method, arg, ok, bad) {
+    if (window.google && google.script && google.script.run) {
+      google.script.run.withSuccessHandler(ok).withFailureHandler(bad)[method](arg);
+      return;
+    }
+    if (!API_URL) { bad(new Error("API_URL is not set")); return; }
+    // text/plain keeps this a "simple" request, which Google's web apps accept from other sites.
+    var request = method === "getPageData"
+      ? fetch(API_URL + "?action=data")
+      : fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "submit", form: arg })
+        });
+    request
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(ok, bad);
+  }
+  var sessions = [];
+  var selected = [];   // ids of the ticked sessions
+  var max = 0;         // 0 = no limit
+  var onePerStudy = true;
+  var details = {};    // study -> details text from Settings (one bullet per line)
+  var declined = {};   // study -> true when the subject chose "No session for this study"
+  var missing = {};    // study -> true after a submit that left this study unanswered
+  function resolveMissing(key) {
+    if (!missing[key]) return;
+    delete missing[key];
+    if (!Object.keys(missing).length) showError("");
+  }
+  var busy = false;
+  function isChosen(id) { return selected.indexOf(id) >= 0; }
+  function studyOf(id) {
+    var found = "";
+    sessions.forEach(function (s) { if (s.id === id) found = s.study || ""; });
+    return found;
+  }
+
+  /* The same study always gets the same color: A, B, C, D map to colors 0 to 3. */
+  function studyColor(key) {
+    if (!key) return "none";
+    var k = String(key).replace(/^study\s*/i, "").toUpperCase();
+    var code = /^[A-Z]$/.test(k) ? k.charCodeAt(0) - 65 : 0;
+    if (code === 0 && !/^[A-Z]$/.test(k)) for (var i = 0; i < k.length; i++) code += k.charCodeAt(i);
+    return String(code % 4);
+  }
+  function paint(el, key) {
+    var c = studyColor(key);
+    el.style.setProperty("--s", "var(--study-" + c + ")");
+    el.style.setProperty("--s-soft", "var(--study-" + c + "-soft)");
+  }
+
+  function showError(msg) { var n = $("form-error"); n.textContent = msg || ""; n.hidden = !msg; }
+
+  function renderSessions(emptyText) {
+    var box = $("session-list");
+    box.textContent = "";
+    if (!sessions.length) {
+      var p = document.createElement("p");
+      p.className = "muted";
+      p.textContent = emptyText || "No sessions are open right now. Check back later.";
+      box.appendChild(p);
+      return;
+    }
+    // Drop ticks for sessions that have filled or disappeared since the last load.
+    selected = selected.filter(function (id) {
+      return sessions.some(function (s) { return s.id === id && s.left > 0; });
+    });
+    var atLimit = max > 0 && selected.length >= max;
+    // One column per study, side by side (stacked on a phone), in the order A, B, ...
+    var groups = [];
+    sessions.forEach(function (s) {
+      var key = s.study || "";
+      var g = null;
+      groups.forEach(function (x) { if (x.key === key) g = x; });
+      if (!g) { g = { key: key, items: [] }; groups.push(g); }
+      g.items.push(s);
+    });
+    groups.sort(function (a, b) {
+      if (!a.key !== !b.key) return a.key ? -1 : 1;   // sessions with no study go last
+      return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+    });
+    var grid = document.createElement("div");
+    grid.className = "study-grid" + (groups.length > 1 ? " split" : "");
+    box.appendChild(grid);
+    groups.forEach(function (g) {
+      var col = document.createElement("div");
+      col.className = "study-col" + (g.key && missing[g.key] ? " missing" : "");
+      paint(col, g.key);
+      if (g.key || groups.length > 1) {
+        var h = document.createElement("h3"); h.className = "study-name";
+        h.textContent = g.key ? studyName(g.key) : "Other sessions";
+        col.appendChild(h);
+      }
+      var info = g.key ? bulletList(details[g.key], "study-details") : null;
+      if (info) col.appendChild(info);
+      g.items.forEach(function (s) { col.appendChild(buildCard(s, atLimit)); });
+      if (g.key) col.appendChild(buildDecline(g.key));
+      grid.appendChild(col);
+    });
+  }
+
+  /* Text with one item per line -> <ul>, or null when there is nothing to show. */
+  function bulletList(text, className) {
+    var items = String(text || "").split(/\r?\n/).map(function (line) {
+      return line.replace(/^\s*[-•*]\s*/, "").trim();
+    }).filter(Boolean);
+    if (!items.length) return null;
+    var ul = document.createElement("ul");
+    ul.className = className;
+    items.forEach(function (t) { var li = document.createElement("li"); li.textContent = t; ul.appendChild(li); });
+    return ul;
+  }
+
+  function studyName(v) { return /^study\b/i.test(v) ? v : "Study " + v; }
+
+  /* The explicit "no session" answer at the bottom of each study column. */
+  function buildDecline(key) {
+    var id = "decline-" + key.replace(/[^A-Za-z0-9_-]/g, "_");
+    var on = declined[key] === true;
+    var label = document.createElement("label");
+    label.className = "session decline" + (on ? " chosen" : "");
+    label.htmlFor = id;
+    var box = document.createElement("input");
+    box.type = "checkbox"; box.id = id; box.checked = on;
+    box.addEventListener("change", function () {
+      if (box.checked) {
+        declined[key] = true;
+        selected = selected.filter(function (sid) { return studyOf(sid) !== key; });
+      } else {
+        delete declined[key];
+      }
+      if (box.checked) resolveMissing(key);
+      renderSessions();
+      var again = $(id);
+      if (again) again.focus();
+    });
+    var main = document.createElement("span"); main.className = "session-main";
+    var text = document.createElement("span"); text.className = "session-time";
+    text.textContent = "No session for " + studyName(key);
+    main.appendChild(text);
+    label.appendChild(box); label.appendChild(main);
+    return label;
+  }
+
+  function buildCard(s, atLimit) {
+      var full = s.left <= 0;
+      var chosen = isChosen(s.id);
+      var blocked = full || (atLimit && !chosen);
+      var label = document.createElement("label");
+      label.className = "session" + (chosen ? " chosen" : "") + (blocked ? " full" : "");
+      label.htmlFor = "session-" + s.id;
+
+      var radio = document.createElement("input");
+      radio.type = "checkbox"; radio.name = "session"; radio.id = "session-" + s.id; radio.value = s.id;
+      radio.disabled = blocked; radio.checked = chosen;
+      radio.addEventListener("change", function () {
+        if (radio.checked) {
+          // One per study: ticking a session replaces any other ticked session in the same study.
+          if (onePerStudy && s.study) {
+            selected = selected.filter(function (id) { return studyOf(id) !== s.study; });
+          }
+          if (!isChosen(s.id)) selected.push(s.id);
+          if (s.study) { delete declined[s.study]; resolveMissing(s.study); }
+        }
+        else selected = selected.filter(function (id) { return id !== s.id; });
+        renderSessions();
+        var again = $("session-" + s.id);
+        if (again) again.focus();
+      });
+
+      var main = document.createElement("span"); main.className = "session-main";
+      var time = document.createElement("span"); time.className = "session-time"; time.textContent = s.label;
+      var room = document.createElement("span"); room.className = "session-room"; room.textContent = s.room || "Room to be announced";
+      main.appendChild(time); main.appendChild(room);
+
+      var seats = document.createElement("span");
+      seats.className = "seats" + (full ? " none" : s.left <= 3 ? " low" : "");
+      seats.textContent = full ? "Full" : s.left + " of " + s.capacity + " left";
+
+      label.appendChild(radio); label.appendChild(main); label.appendChild(seats);
+      return label;
+  }
+
+  function applyData(data) {
+    $("title").textContent = data.title;
+    document.title = data.title;
+    $("intro").textContent = data.intro;
+    sessions = data.open ? data.sessions : [];
+    max = Number(data.max) || 0;
+    onePerStudy = data.onePerStudy !== false;
+    details = data.details || {};
+    // Each line of the note becomes a bullet point.
+    var note = $("signup-note");
+    note.textContent = "";
+    String(data.note || "").split(/\r?\n/).forEach(function (line) {
+      line = line.replace(/^\s*[-•*]\s*/, "").trim();
+      if (!line) return;
+      var li = document.createElement("li");
+      li.textContent = line;
+      note.appendChild(li);
+    });
+    note.hidden = !note.children.length || !sessions.length;
+    var hasStudies = sessions.some(function (s) { return s.study; });
+    $("session-hint").textContent = hasStudies
+      ? "For each study, pick a session or choose “No session”."
+      : max === 1 ? "Choose one session."
+      : onePerStudy ? "Pick one session in each study you want to join."
+      : max > 1 ? "Tick every session you want to attend, up to " + max + "."
+      : "Tick every session you want to attend.";
+    $("fields").disabled = !data.open || !sessions.length;
+    renderSessions(data.open ? "" : "Sign-ups are closed.");
+  }
+
+  function load() {
+    var failed = function () {
+      $("fields").disabled = true;
+      sessions = [];
+      renderSessions("Couldn't load the sessions. Refresh the page to try again.");
+    };
+    server("getPageData", null, function (data) {
+      if (!data || data.ok === false || !data.sessions) return failed();
+      applyData(data);
+    }, failed);
+  }
+
+  function setBusy(on) {
+    busy = on;
+    $("submit-btn").disabled = on;
+    $("submit-btn").textContent = on ? "Saving…" : "Sign up";
+  }
+
+  $("signup-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    if (busy) return;
+    var firstName = $("f-first").value.trim();
+    var lastName = $("f-last").value.trim();
+    var email = $("f-email").value.trim();
+    if (!firstName) return showError("Enter your first name.");
+    if (!lastName) return showError("Enter your last name.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError("Enter a valid email address.");
+    var phone = $("f-phone").value.trim();
+    var digits = phone.replace(/\D/g, "").length;
+    if (!/^\+?[\d\s().-]+$/.test(phone) || digits < 7 || digits > 15) return showError("Enter a valid phone number.");
+    // Every study needs an answer: a session, or "No session for this study".
+    var unanswered = [];
+    sessions.forEach(function (s) {
+      if (!s.study || unanswered.indexOf(s.study) >= 0 || declined[s.study]) return;
+      var answered = selected.some(function (id) { return studyOf(id) === s.study; });
+      if (!answered) unanswered.push(s.study);
+    });
+    missing = {};
+    unanswered.forEach(function (k) { missing[k] = true; });
+    renderSessions();
+    if (unanswered.length) {
+      return showError("For " + unanswered.map(studyName).join(" and ") +
+        ", pick a session or choose “No session for " +
+        (unanswered.length === 1 ? studyName(unanswered[0]) : "this study") + "”.");
+    }
+    if (!selected.length) return showError("Choose a session in at least one study.");
+    if (!$("f-consent").checked) return showError("Tick the box to confirm you are 18 or older and can be contacted.");
+    showError("");
+    setBusy(true);
+    var form = { firstName: firstName, lastName: lastName, email: email, phone: phone, sessionIds: selected.slice(), consent: true };
+    server("submitSignup", form, function (res) {
+        setBusy(false);
+        if (!res || !res.ok) {
+          showError((res && res.error) || "Something went wrong. Try again.");
+          load();
+          return;
+        }
+        var list = $("done-sessions");
+        list.textContent = "";
+        (res.sessions || []).forEach(function (s) {
+          var li = document.createElement("li");
+          if (s.study) {
+            paint(li, s.study);
+            var badge = document.createElement("span"); badge.className = "badge";
+            badge.textContent = studyName(s.study);
+            li.appendChild(badge);
+          }
+          var time = document.createElement("span"); time.className = "session-time";
+          time.textContent = s.label;
+          var room = document.createElement("span"); room.className = "session-room"; room.textContent = s.room || "Room to be announced";
+          li.appendChild(time); li.appendChild(room);
+          list.appendChild(li);
+        });
+        $("done-name").textContent = firstName + " " + lastName;
+        $("done-email").textContent = email;
+        $("done-phone").textContent = phone;
+        $("done-invite").textContent = res.invited > 1
+          ? "Calendar invitations, one per session, are on their way to your email."
+          : "A calendar invitation is on its way to your email.";
+        $("done-invite").hidden = !res.invited;
+        $("done-contact").textContent = res.contact ? "To change or cancel, email " + res.contact + "." : "";
+        $("done-contact").hidden = !res.contact;
+        $("form-panel").hidden = true;
+        $("done-panel").hidden = false;
+      }, function () {
+        setBusy(false);
+        showError("Couldn't save your sign-up. Check your connection and try again.");
+      });
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
